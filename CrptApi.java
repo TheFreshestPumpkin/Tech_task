@@ -31,7 +31,7 @@ public class CrptApi {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    private String token; // bearer token
+    private String token;
 
     public CrptApi(TimeUnit timeUnit, int requestLimit) {
         if (requestLimit <= 0) throw new IllegalArgumentException("requestLimit must be > 0");
@@ -44,12 +44,7 @@ public class CrptApi {
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    /**
-     * Получение токена через УКЭП.
-     * @param signerKey приватный ключ для подписи
-     */
     public void authenticate(PrivateKey signerKey) throws Exception {
-        // Шаг 1: получить uuid + data
         HttpRequest keyReq = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/auth/cert/key"))
                 .GET()
@@ -62,10 +57,7 @@ public class CrptApi {
 
         AuthKeyResponse keyData = objectMapper.readValue(keyResp.body(), AuthKeyResponse.class);
 
-        // Подписываем data приватным ключом
         String signedBase64 = signDataBase64(keyData.data, signerKey);
-
-        // Шаг 2: отправить uuid + подписанные данные
         AuthTokenRequest tokenReqBody = new AuthTokenRequest(keyData.uuid, signedBase64);
         String tokenJson = objectMapper.writeValueAsString(tokenReqBody);
 
@@ -133,7 +125,6 @@ public class CrptApi {
         }
     }
 
-    // === Подпись данных в base64 ===
     private String signDataBase64(String data, PrivateKey privateKey) throws Exception {
         Signature signature = Signature.getInstance("SHA256withRSA");
         signature.initSign(privateKey);
@@ -196,3 +187,4 @@ public class CrptApi {
         }
     }
 }
+
